@@ -15,4 +15,8 @@ class Movie(scrapy.Item):
     year = scrapy.Field()
     description = scrapy.Field()
     cast = scrapy.Field()
+    characters = scrapy.Field()
     director = scrapy.Field()
+    avg_rating = scrapy.Field()
+    watches = scrapy.Field()
+    likes = scrapy.Field()

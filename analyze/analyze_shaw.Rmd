@@ -1,0 +1,81 @@
+---
+title: "Analyze Shaw Bros"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(tidyjson)
+```
+
+
+Read in the JSON:
+
+```{r}
+filename = '../out/shaw.json'
+shaw_json <- paste(readLines(filename), collapse="")
+```
+
+```{r}
+films <- shaw_json %>% gather_array %>%
+  spread_values(
+    title = jstring("title"),
+    director = jstring('director'),
+    year = jstring('year'),
+    avg_rating = jstring('avg_rating'),
+    watches = jstring("watches"),
+    likes = jstring("likes")
+  )
+```
+
+```{r}
+cast <- shaw_json %>% gather_array %>%
+  spread_values(
+    title = jstring("title"),
+    director = jstring('director'),
+    year = jstring('year'),
+    avg_rating = jstring('avg_rating'),
+    watches = jstring("watches"),
+    likes = jstring("likes")
+  ) %>% enter_object("cast") %>% gather_array() %>%
+  spread_values(
+    name = jstring("name")
+  )
+    
+```
+
+Right now characters are a separte array
+```{r}
+characters <- shaw_json %>% gather_array %>%
+  spread_values(
+    title = jstring("title"),
+    director = jstring('director'),
+    year = jstring('year'),
+    avg_rating = jstring('avg_rating'),
+    watches = jstring("watches"),
+    likes = jstring("likes")
+  ) %>% enter_object("characters") %>% gather_array() %>%
+  spread_values(
+    name = jstring("name")
+  )
+```
+
+How many films?
+
+```{r}
+nrow(films)
+```
+
+
+
+## Read in Data
+
+### Notes
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
