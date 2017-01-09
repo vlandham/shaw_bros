@@ -6,8 +6,10 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(tidyjson)
+library(ggthemes)
 ```
 
+## Read in Data
 
 Read in the JSON:
 
@@ -15,6 +17,8 @@ Read in the JSON:
 filename = '../out/shaw.json'
 shaw_json <- paste(readLines(filename), collapse="")
 ```
+
+Use `tidyjson` to convert to tibble.
 
 ```{r}
 films <- shaw_json %>% gather_array %>%
@@ -66,9 +70,14 @@ How many films?
 nrow(films)
 ```
 
+```{r}
+films %>% ggplot(aes(x = year)) +
+  geom_bar() +
+  labs(title = 'Shaw Bros Films by Year') + 
+  theme_fivethirtyeight()
+```
 
 
-## Read in Data
 
 ### Notes
 
