@@ -121,7 +121,7 @@ films_top_director <- films %>% filter(director %in% top_directors$director)
 
 films_top_director %>%
   ggplot(aes(x = year)) +
-  geom_bar(aes(fill = director_label)) +
+  geom_bar(aes(fill = director)) +
   labs(title = 'Shaw Bros Top Director Count by Year') + 
   theme_fivethirtyeight()
 ```
@@ -171,7 +171,7 @@ Even with my novice-level consuption of Shaw Brothers films, one thing I noticed
 
 First, just like directors, we can look at counts by actor. 
 
-```{r fig.height = 5}
+```{r fig.height = 5, fig.width = 4}
 by_actor <- cast %>% group_by(name) %>% summarise(n = n()) %>% arrange(-n)
 
 by_actor %>% filter(n > 15) %>%
@@ -184,11 +184,25 @@ by_actor %>% filter(n > 15) %>%
 
 Wow! [Ku Feng](https://en.wikipedia.org/wiki/Ku_Feng) apparently appeared in 82 Kung-Fu movies. That's a lot of Kung-Fu!
 
-His Wikipedia page isn't as impressed with this feat as I am, providing little information on this Martial Arts Maniac. Apparently his real name is Chan Sze-man, and his first film was in 1959. The [HKMDB](http://hkmdb.com/db/people/view.mhtml?id=3579&display_set=eng), or Hong Kong Movie Database, provides just a bit more info:
+His Wikipedia page isn't as impressed with this feat as I am, providing little information on this Martial Arts Maniac. Apparently his real name is Chan Sze-man, and his first film was in 1959, and apparently he is still acting. The [HKMDB](http://hkmdb.com/db/people/view.mhtml?id=3579&display_set=eng), or Hong Kong Movie Database, provides just a bit more info:
 
 > In 1965, Ku formally signed an acting contract with Shaw Brothers where he made around 100 films for them and became most notably known as one of their top character actors. He has worked with just about every top Hong Kong director in a variety of films.
 
 Ok then, well props to you Ku.
+
+```{r fig.height=8, fig.width=5}
+top_actor <- by_actor %>% head(n = 16)
+films_top_actor <- cast %>% filter(name %in% top_actor$name)
+
+films_top_actor %>% 
+  ggplot(aes(x = year, fill = name)) +
+  geom_bar() +
+  labs(title = 'Top Actors Film Count by Year') + 
+  facet_wrap( ~ fct_relevel(name, top_actor$name)) +
+  theme_fivethirtyeight()
+
+```
+
 
 ## Other
 
