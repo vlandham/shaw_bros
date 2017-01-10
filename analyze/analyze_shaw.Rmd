@@ -4,24 +4,25 @@ output: html_notebook
 ---
 
 ```{r}
-library(tidyverse)
-library(tidyjson)
 library(ggthemes)
+library(tidyjson)
+library(tidyverse)
+library(forcats)
 ```
 
 ## Read in Data
 
-Read in the JSON:
+Read the JSON into a string.
 
 ```{r}
 filename = '../out/shaw.json'
 shaw_json <- paste(readLines(filename), collapse="")
 ```
 
-Use `tidyjson` to convert to tibble.
+Use `tidyjson` to convert a table format we can work with. 
 
 ```{r}
-films <- shaw_json %>% gather_array %>%
+films <- shaw_json %>% as.tbl_json %>% gather_array %>%
   spread_values(
     title = jstring("title"),
     director = jstring('director'),
@@ -33,7 +34,7 @@ films <- shaw_json %>% gather_array %>%
 ```
 
 ```{r}
-cast <- shaw_json %>% gather_array %>%
+cast <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
   spread_values(
     title = jstring("title"),
     director = jstring('director'),
@@ -50,7 +51,7 @@ cast <- shaw_json %>% gather_array %>%
 
 Right now characters are a separte array
 ```{r}
-characters <- shaw_json %>% gather_array %>%
+characters <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
   spread_values(
     title = jstring("title"),
     director = jstring('director'),
@@ -70,6 +71,12 @@ How many films?
 nrow(films)
 ```
 
+260! That's a lot of kung-fu. Let's take a look at these films from a few different angles. We can start with Time 
+
+### Shaw Brothers, Through The Ages
+
+To start, let's look at when the films were made.
+
 ```{r}
 films %>% ggplot(aes(x = year)) +
   geom_bar() +
@@ -77,9 +84,115 @@ films %>% ggplot(aes(x = year)) +
   theme_fivethirtyeight()
 ```
 
+The first Kung-fu Shaw Brothers film in this data set is [Temple of the Red Lotus](https://letterboxd.com/film/temple-of-the-red-lotus/) from 1965. From the reviews, it sounds like it was a bit rough around the edges - but thats about what you would expect from this burgeoning genre.
+
+The studio hits its stride in the early 70's, with a lull in the mid 70's and another spike in the late 70's, early 80's. Keep in mind that even during the lull, the studio is still putting out 10 or more Kung-fu movies most years. 
 
 
-### Notes
+### Shaw Brothers Directorial Favorites
+
+We should have director for each movie, let's look to see if there are any popular standouts.
+
+
+```{r}
+by_director <- films %>% group_by(director) %>% summarise(n = n()) %>% arrange(-n)
+
+  by_director %>% filter(n > 1) %>%
+  ggplot(aes(x = fct_reorder(director, n), y = n)) + 
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = 'Counts of Shaw Bros Films by Director') +
+  theme_fivethirtyeight()
+```
+
+I'd say! [Chang Cheh](https://en.wikipedia.org/wiki/Chang_Cheh) directed 67 or roughly 26% of all Shaw Brothers Kung-fu!
+
+According to his Wikipedia page, he was known as the "The Godfather of Hong Kong cinema", and rightly so - at least in terms of quantity. 
+
+Let's pull out the top 5 directors, in terms of movie count, and see when they were most active. 
+
+```{r}
+
+# pull out just the top 5 directors
+top_directors <- by_director %>% head(n = 5)
+# filter films to those directed by these titans of kung-fu
+films_top_director <- films %>% filter(director %in% top_directors$director)
+
+
+films_top_director %>%
+  ggplot(aes(x = year)) +
+  geom_bar(aes(fill = director_label)) +
+  labs(title = 'Shaw Bros Top Director Count by Year') + 
+  theme_fivethirtyeight()
+```
+
+```{r}
+# Try Dodge Position
+films_top_director %>%
+  ggplot(aes(x = year)) +
+  geom_bar(aes(fill = director), position = "dodge") +
+  labs(title = 'Shaw Bros Top Director Count by Year') + 
+  theme_fivethirtyeight()
+```
+
+
+```{r}
+# Try Fill Position
+films_top_director %>%
+  ggplot(aes(x = year)) +
+  geom_bar(aes(fill = director), position = "fill") +
+  labs(title = 'Shaw Bros Top Director Count by Year') + 
+  theme_fivethirtyeight()
+```
+
+That was with filtering to _just_ the top directors. What happens when we put all of them in?
+
+```{r}
+films_top_director_all <- films %>% mutate(director_label = ifelse(director %in% top_directors$director, director, 'Other'))
+
+films_top_director_all %>%
+  ggplot(aes(x = year)) +
+  geom_bar(aes(fill = director_label)) +
+  labs(title = 'Shaw Bros Director Count by Year', fill = '') + 
+  theme_fivethirtyeight()
+```
+
+```{r}
+films_top_director_all %>%
+  ggplot(aes(x = year)) +
+  geom_bar(aes(fill = director_label), position = 'fill') +
+  labs(title = 'Shaw Bros Director Count by Year', fill = '') + 
+  theme_fivethirtyeight()
+```
+
+## Actor Troupes and Groups
+
+Even with my novice-level consuption of Shaw Brothers films, one thing I noticed early on was a lot of familiar faces that showed up in many of the movies. My assumption is just like directors, there are a number of actors that are heavily reused in these films. Let's see if I am right!
+
+First, just like directors, we can look at counts by actor. 
+
+```{r fig.height = 5}
+by_actor <- cast %>% group_by(name) %>% summarise(n = n()) %>% arrange(-n)
+
+by_actor %>% filter(n > 15) %>%
+  ggplot(aes(x = fct_reorder(name, n), y = n)) +
+  geom_bar(stat = "identity") +
+  coord_flip() +
+  labs(title = 'Counts of Shaw Bros Films by Actor') +
+  theme_fivethirtyeight()
+```
+
+Wow! [Ku Feng](https://en.wikipedia.org/wiki/Ku_Feng) apparently appeared in 82 Kung-Fu movies. That's a lot of Kung-Fu!
+
+His Wikipedia page isn't as impressed with this feat as I am, providing little information on this Martial Arts Maniac. Apparently his real name is Chan Sze-man, and his first film was in 1959. The [HKMDB](http://hkmdb.com/db/people/view.mhtml?id=3579&display_set=eng), or Hong Kong Movie Database, provides just a bit more info:
+
+> In 1965, Ku formally signed an acting contract with Shaw Brothers where he made around 100 films for them and became most notably known as one of their top character actors. He has worked with just about every top Hong Kong director in a variety of films.
+
+Ok then, well props to you Ku.
+
+## Other
+
+## R Markdown Notes
 
 This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
 
