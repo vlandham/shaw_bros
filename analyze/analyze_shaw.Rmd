@@ -190,6 +190,8 @@ His Wikipedia page isn't as impressed with this feat as I am, providing little i
 
 Ok then, well props to you Ku.
 
+Did most of the top actors' carreers span multiple decades, or did actors come and go quickly? Let's graph the top actor's movie count by year. 
+
 ```{r fig.height=8, fig.width=5}
 top_actor <- by_actor %>% head(n = 16)
 films_top_actor <- cast %>% filter(name %in% top_actor$name)
@@ -199,9 +201,92 @@ films_top_actor %>%
   geom_bar() +
   labs(title = 'Top Actors Film Count by Year') + 
   facet_wrap( ~ fct_relevel(name, top_actor$name)) +
-  theme_fivethirtyeight()
+  # only label half of the years to make things a bit look cleaner
+  scale_x_discrete(labels = function(x) { return(ifelse(as.numeric(x) %% 2, x, '')) }) +
+  theme_fivethirtyeight() + 
+  # angle label text
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none")
 
 ```
+
+
+## Title Showdown
+
+```{r}
+library(tidytext)
+
+data("stop_words")
+```
+
+
+```{r}
+titles <- films %>% mutate(raw_title = title) %>% unnest_tokens(word, title)
+```
+
+```{r}
+titles_filter <- titles %>% anti_join(stop_words, by = "word")
+```
+
+
+```{r}
+by_word <- titles_filter %>% count(word, sort = TRUE)
+by_word %>%
+  filter(n > 3) %>% 
+  ggplot(aes(x = fct_reorder(word, n), y = n)) +
+  geom_bar(stat = 'identity') +
+  coord_flip() + 
+  labs(title = 'Top Words Used in Kung-Fu Titles') +
+  theme_fivethirtyeight()
+```
+
+
+```{r}
+top_word <- by_word %>% head(n = 12)
+films_top_word <- titles %>% filter(word %in% top_word$word)
+
+films_top_word %>% 
+  ggplot(aes(x = year, fill = word)) +
+  geom_bar() +
+  labs(title = 'Titles with Most Common Words by Year') + 
+  facet_wrap( ~ fct_relevel(word, top_word$word)) +
+  scale_x_discrete(labels = function(x) { return(ifelse(as.numeric(x) %% 2, x, '')) }) +
+  theme_fivethirtyeight() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none")
+
+```
+
+Swordsman or Shaolin?
+
+```{r}
+top2_word <- by_word %>% head(n = 2)
+films_top2_word <- titles %>% filter(word %in% top2_word$word)
+
+films_top2_word %>% 
+  ggplot(aes(x = year, fill = fct_inorder(word))) +
+  geom_bar() +
+  labs(title = 'Titles with Most Common Words by Year', fill = '') + 
+  #scale_x_discrete(labels = function(x) { return(ifelse(as.numeric(x) %% 2, x, '')) }) +
+  theme_fivethirtyeight() 
+  #theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+Swordsman Titles
+
+```{r}
+titles %>% filter(word == 'swordsman') %>% arrange(year) %>% select(raw_title, year)
+```
+
+Shaolin Titles
+
+```{r}
+titles %>% filter(word == 'shaolin') %>% arrange(year) %>% select(raw_title, year)
+```
+
+
+From [History in the Shaw Brothers](http://thevulgarcinema.com/2015/12/history-in-the-shaw-brothers/)
+
+> These films, focused on the Shaolin Temple as a center for anti-Qing resistance, provide a dizzying metaphorical potential, with the Qing variously standing in for Western imperialists, the Japanese, the Nationalist Kuomingtang, the Communists, or even simply the Manchurians themselves, while the Buddhism of the monks allows for examining of the contradictions at the heart of traditional Chinese belief systems, between the imperatives of social justice and withdrawal from worldly concerns.
+
 
 
 ## Other
