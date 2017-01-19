@@ -1,25 +1,41 @@
 ---
-title: "Analyze Shaw Bros"
+title: "Analysis of Shaw Brothers Kung Fu Films"
 output: html_notebook
 ---
+
+Recently, I've been a bit caught up in old Kung-Fu movies. Shorting any technical explorations, I have instead been diving head-first into any and all Netflix accessible martial arts materpiece from the 70's and 80's. 
+
+While I've definitely been enjoying the films, I realized recently that I had little context for the movies I was watching. I wondered if some films, like our latest favorite, [Executioners from Shaolin](http://www.imdb.com/title/tt0076168/) could be enjoyed even more, with better understanding of the context in which these films exist in the Kung-Fu universe. 
+
+So, I began a data driven quest for truth and understanding (or at least a semi-interesting dataset to explore) of all Shaw Brothers Kung Fu movies ever made!
+
+For those not dedicating some portion of their finite lives to these retro wonders, the [Shaw Brothers Studio](https://en.wikipedia.org/wiki/Shaw_Brothers_Studio) is the most famous (to me) Kung-Fu film producer of that time, or any other. Their memorable, if confusing, title screen is typically part of my movie watching experience.  
+
+I figured this company's entire martial arts collection would provide for a consistent and through look at the genre. Fortunately, after a [bit]() [of]() [searching]() I stumbled on what appears to be a [comprehensive list of Shaw Brothers Films](https://letterboxd.com/jewbo23/list/shaw-brothers-martial-arts-films/) (well, actually I learned that Shaw Brothers Studios did a lot of dramas and other types of films as well, just less well known in the Western world). I decided [pull down details]() for each of these movies from the amazingly useful [Letterboxd](https://letterboxd.com/) movie-list-creation site to explore them in a data driven way to see what patterns could be discovered and what context I could learn from those patterns.
+
+So here is a bit of data exploration fun. The analysis is in R, using tips and tricks from Hadley Wickham's wonderful new [Data Science in R]() book. 
+
+This analysis can also be found in [R Notebook]() form, which includes the full code and graphs in an integrated format. And (spoilers!), the end [Actor Collaboration Network]() code can be [found on github](). 
 
 ```{r}
 library(ggthemes)
 library(tidyjson)
 library(tidyverse)
 library(forcats)
+
+source("v_theme.R")
 ```
 
 ## Read in Data
 
-Read the JSON into a string.
+First, we need to get the data somehow. Its in JSON format, so let's read the JSON into a string.
 
 ```{r}
 filename = '../out/shaw.json'
 shaw_json <- paste(readLines(filename), collapse="")
 ```
 
-Use `tidyjson` to convert a table format we can work with. 
+Then use [tidyjson](https://github.com/sailthru/tidyjson) to convert the nested form into a flat data frame ([tibble](https://blog.rstudio.org/2016/03/24/tibble-1-0-0/)) we can work with. 
 
 ```{r}
 films <- shaw_json %>% as.tbl_json %>% gather_array %>%
@@ -31,7 +47,13 @@ films <- shaw_json %>% as.tbl_json %>% gather_array %>%
     watches = jstring("watches"),
     likes = jstring("likes")
   )
+
+films %>% head(n = 5) %>% select(title, director, year)
 ```
+
+The above table has a row for every film. 
+
+We can use `tidyjson` again to create a row for each actor, duplicating the film-specific data for each actor that had a part in it.
 
 ```{r}
 cast <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
@@ -46,10 +68,12 @@ cast <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
   spread_values(
     name = jstring("name")
   )
-    
+
+cast %>% head(n = 8) %>% select(title, year, name)
 ```
 
 Right now characters are a separte array
+
 ```{r}
 characters <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
   spread_values(
@@ -65,33 +89,35 @@ characters <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
   )
 ```
 
-How many films?
+Real quick, let's get a sense of the number of films in our data.
 
 ```{r}
 nrow(films)
 ```
 
-260! That's a lot of kung-fu. Let's take a look at these films from a few different angles. We can start with Time 
+260! That's a lot of Kung-Fu. Let's take a look at these films from a few different angles. We can start with release year.
 
 ### Shaw Brothers, Through The Ages
 
-To start, let's look at when the films were made.
+So, I said retro, when exactly were these movies made?
 
 ```{r}
+source("v_theme.R")
 films %>% ggplot(aes(x = year)) +
   geom_bar() +
   labs(title = 'Shaw Bros Films by Year') + 
+  #fte_theme()
   theme_fivethirtyeight()
 ```
 
 The first Kung-fu Shaw Brothers film in this data set is [Temple of the Red Lotus](https://letterboxd.com/film/temple-of-the-red-lotus/) from 1965. From the reviews, it sounds like it was a bit rough around the edges - but thats about what you would expect from this burgeoning genre.
 
-The studio hits its stride in the early 70's, with a lull in the mid 70's and another spike in the late 70's, early 80's. Keep in mind that even during the lull, the studio is still putting out 10 or more Kung-fu movies most years. 
+The studio hits its stride in the early 70's, with a lull in the mid 70's and another spike in the late 70's, early 80's. Keep in mind that even during the lull, the studio is _still_ putting out 10 or more Kung-fu movies most years. 
 
 
 ### Shaw Brothers Directorial Favorites
 
-We should have director for each movie, let's look to see if there are any popular standouts.
+We have the director for each movie in our dataset, let's look to see if there are any popular standouts.
 
 
 ```{r}
@@ -118,19 +144,10 @@ top_directors <- by_director %>% head(n = 5)
 # filter films to those directed by these titans of kung-fu
 films_top_director <- films %>% filter(director %in% top_directors$director)
 
-
+#plot bar chart
 films_top_director %>%
   ggplot(aes(x = year)) +
   geom_bar(aes(fill = director)) +
-  labs(title = 'Shaw Bros Top Director Count by Year') + 
-  theme_fivethirtyeight()
-```
-
-```{r}
-# Try Dodge Position
-films_top_director %>%
-  ggplot(aes(x = year)) +
-  geom_bar(aes(fill = director), position = "dodge") +
   labs(title = 'Shaw Bros Top Director Count by Year') + 
   theme_fivethirtyeight()
 ```
@@ -270,13 +287,30 @@ films_top2_word %>%
   #theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Swordsman Titles
+**Swordsman Titles**
 
 ```{r}
 titles %>% filter(word == 'swordsman') %>% arrange(year) %>% select(raw_title, year)
 ```
 
-Shaolin Titles
+swordsman success: https://en.wikipedia.org/wiki/One-Armed_Swordsman
+
+>  It was the first of the new style of wuxia films emphasizing male anti-heroes, violent swordplay and heavy bloodletting. It was the first Hong Kong film to make HK$1 million at the local box office, propelling its star Jimmy Wang to super stardom.
+
+Wuxia Films. 
+
+[30 Essential Wuxia Films](https://theendofcinema.net/2016/02/11/30-essential-wuxia-films/)
+
+> The Chinese martial arts movie is generally split into two primary subgeneres: the kung fu film and the wuxia film. The kung fu film is newer and focuses primarily on hand-to-hand combat, it’s steeped in traditional fighting forms and there’s a general emphasis on the physical skill of the performer: special effects are generally disdained. Bruce Lee and Jackie Chan are its most famous practitioners and Lau Kar-leung its most important director.
+
+> Wuxia is a much older form, based ultimately in the long tradition of Chinese adventure literature, in classic novels such as The Water Margin or Journey to the West, or more contemporary works by authors like Louis Cha and Gu Long. Its heroes follow a very specific code of honor as they navigate the jianghu, an underworld of outlaws and bandits outside the normal streams of civilization.
+
+
+From [Wuxia Women Warriors](http://www.indiewire.com/2015/10/8-extraordinary-wuxia-films-powered-by-warrior-women-56527/)
+
+> Less realistic than its cousin, the kung fu film, wuxia often includes gravity-defying stunts where legendary warriors fly through the air or punch holes straight through their enemies’ chests.
+
+**Shaolin Titles**
 
 ```{r}
 titles %>% filter(word == 'shaolin') %>% arrange(year) %>% select(raw_title, year)
@@ -286,6 +320,191 @@ titles %>% filter(word == 'shaolin') %>% arrange(year) %>% select(raw_title, yea
 From [History in the Shaw Brothers](http://thevulgarcinema.com/2015/12/history-in-the-shaw-brothers/)
 
 > These films, focused on the Shaolin Temple as a center for anti-Qing resistance, provide a dizzying metaphorical potential, with the Qing variously standing in for Western imperialists, the Japanese, the Nationalist Kuomingtang, the Communists, or even simply the Manchurians themselves, while the Buddhism of the monks allows for examining of the contradictions at the heart of traditional Chinese belief systems, between the imperatives of social justice and withdrawal from worldly concerns.
+
+## Finding A Mob of Venoms 
+
+[Venom Mob](https://en.wikipedia.org/wiki/Venom_Mob)
+
+Inspiration from [Love Actually Analysis](http://varianceexplained.org/r/love-actually-network/) by David Robinson.
+
+Create a matrix of actor co-occurance.
+
+```{r}
+summary(by_actor$n)
+```
+
+
+```{r}
+library(reshape2)
+
+# filter actors not in many movies
+min_movie_actors <- by_actor %>% filter(n > 5)
+popular_cast <- cast %>% filter(name %in% min_movie_actors$name) 
+
+cast_movie_matrix <- popular_cast %>%
+  acast(name ~ title,  fun.aggregate = length)
+dim(cast_movie_matrix)
+```
+
+Rows are actors. Columns are movies. 
+
+
+Filter out movies with few co-occuring actors
+
+```{r}
+cast_movie_df_filtered <- cast_movie_df %>% colSums(.)
+```
+
+
+```{r}
+norm <- cast_movie_matrix / rowSums(cast_movie_matrix)
+
+hc_norm_cast <- hclust(dist(norm, method = "manhattan"))
+
+```
+
+
+Plot:
+
+```{r, fig.height=4.8, fig.width=3.6}
+library(ggdendro)
+
+ggdendrogram(hc_norm_cast, rotate = TRUE)
+```
+
+See ordering:
+
+```{r}
+ordering <-hc_norm_cast$labels[hc_norm_cast$order]
+ordering
+```
+
+```{r}
+ordered_films <- popular_cast %>% arrange(year) %>%
+  mutate(film_index = as.numeric(fct_inorder(factor(title))), cast_name = factor(name, levels = ordering))
+
+ordered_films %>% ggplot(aes(film_index, cast_name)) +
+    geom_point() +
+    geom_path(aes(group = film_index))
+```
+
+
+```{r}
+# http://stackoverflow.com/questions/13281303/creating-co-occurrence-matrix
+cooccur <- cast_movie_matrix %*% t(cast_movie_matrix)
+
+diag(cooccur) <- 0
+
+heatmap(cooccur, symm = TRUE )
+```
+
+cooccur is matrix with rows and columns as actors. The cells for each actor combo indicate the number of movies they have appeared together in.
+
+```{r}
+summary(rowSums(cooccur))
+
+summary(colSums(cooccur))
+
+summary(colSums(cooccur != 0))
+
+collab_counts <- as.data.frame(colSums(cooccur != 0))
+```
+
+```{r}
+library(igraph)
+
+cooccur <- cast_movie_matrix %*% t(cast_movie_matrix)
+#cooccur <- ifelse(cooccur < 4, 0, cooccur)
+
+g <- graph.adjacency(cooccur, weighted = TRUE, mode = "undirected", diag = FALSE)
+
+summary(E(g)$weight)
+
+summary(degree(g))
+
+summary(strength(g))
+```
+
+
+```{r, fig.height=4, fig.width=4}
+library(igraph)
+
+cooccur <- cast_movie_matrix %*% t(cast_movie_matrix)
+#cooccur <- ifelse(cooccur < 4, 0, cooccur)
+
+g <- graph.adjacency(cooccur, weighted = TRUE, mode = "undirected", diag = FALSE)
+
+low_degree_v <- V(g)[degree(g) < 10] #identify those vertices part of less than three edges
+g <- delete_vertices(g, low_degree_v) #exclude them from the graph
+
+low_weight_e <- E(g)[E(g)$weight < 3]
+g <- delete_edges(g, low_weight_e)
+
+low_strength_v <- V(g)[strength(g) < 90]
+g <- delete_vertices(g, low_strength_v) #exclude them from the graph
+
+V(g)$betweenness <- strength(g)
+
+plot(g, edge.width = E(g)$weight, 
+     #layout=layout.fruchterman.reingold,
+     layout=layout_with_fr,
+     vertex.label.dist=0.5,
+     #vertex.size = V(g)$betweenness,
+     vertex.size = 3,
+     vertex.color='steelblue',
+     vertex.frame.color='steelblue', 		#the color of the border of the dots 
+     vertex.label.color='black',		#the color of the name labels
+     vertex.label.font=2,			#the font of the name labels
+     vertex.label.cex=1,			#specifies the size of the font of the labels. can also be made to vary
+     edge.color = hsv(1,1,1,alpha=0.2)
+
+)
+```
+
+
+```{r}
+chiang_sheng <- V(g)[V(g)$name == "Chiang Sheng"]
+
+chiang_sheng_neighbors <- neighbors(g, chiang_sheng)
+neighbor_edges <- incident_edges(g, chiang_sheng_neighbors)
+
+sub_g <- make_empty_graph(n = length(chiang_sheng_neighbors), directed = FALSE)
+add_vertices(sub_g, chiang_sheng_neighbors)
+
+#add_edges(sub_g, neighbor_edges)
+E(g)[neighbor_edges$color = hsv(0,0.2,0.5,alpha=0.5)
+V(g)$color = "grey"
+V(g)[chiang_sheng]$color = "tomato"
+V(g)[chiang_sheng_neighbors]$color = 'tomato'
+```
+
+```{r, fig.height=4, fig.width=4}
+plot(g, edge.width = E(g)$weight, 
+     #layout=layout.fruchterman.reingold,
+     layout=layout_with_fr,
+     vertex.label.dist=0.5,
+     #vertex.size = V(g)$betweenness,
+     vertex.size = 5,
+     vertex.color=V(g)$color,
+     vertex.frame.color='steelblue', 		#the color of the border of the dots 
+     vertex.label.color='black',		#the color of the name labels
+     vertex.label.font=2,			#the font of the name labels
+     vertex.label.cex=1,			#specifies the size of the font of the labels. can also be made to vary
+     edge.color = hsv(0,0.2,0.5,alpha=0.2)
+)
+```
+
+
+```{r}
+cooccur_df <- data.frame(cooccur, col.names = colnames(cooccur))
+cooccur_df$name <- row.names(cooccur) 
+cooccur_df <- cooccur_df %>% select(name, everything())
+write_delim(cooccur_df, 'shaw_cooccurance.csv', delim = ';')
+```
+
+```{r}
+
+```
 
 
 
