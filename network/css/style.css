@@ -1,5 +1,6 @@
 body {
   font-family: Arial, sans-serif;
+  height: 100%;
 }
 
 a, a:visited {
@@ -55,8 +56,8 @@ p.search_title {
 }
 
 #search_section {
-  padding-top: 23px;
-  padding-left: 20px;
+  /*padding-top: 23px;*/
+  /*padding-left: 20px;*/
 }
 
 #search_form #search {
@@ -71,7 +72,7 @@ footer p {
 
 .edge {
   fill: none;
-  stroke-width: 1.5px;
+  /*stroke-width: 1.5px;*/
 }
 
 .tooltip {
@@ -102,8 +103,33 @@ hr.tooltip-hr {
   margin:3px 0 3px 0;
 }
 
+.content {
+  /*position:relative;
+  width:100%;
+  height:100%;*/
+}
+
 #side {
+  /*position:fixed;
+  top:0;
+  left:0;
+  height:100%;
+  padding:0;
+  overflow-y:scroll;*/
+
+  overflow-y:scroll;
 }
 
 #vis {
+}
+
+/**/
+
+#infoTitle {
+  margin-bottom: 1px;
+}
+
+.connCount {
+  font-size: 70%;
+  color: #777;
 }

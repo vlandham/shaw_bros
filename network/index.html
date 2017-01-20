@@ -27,7 +27,7 @@
       <div id="layouts" class="control">
         <h3>Layout</h3>
         <a id="force" class="active">Force Directed</a>
-        <a id="radial">Artists</a>
+        <a id="radial">Circle</a>
       </div>
       <div id="filters" class="control">
         <h3>Filter</h3>
@@ -35,17 +35,19 @@
         <input type="range" min="1" max="57" value="18" id="minCount">
       </div>
       <div id="search_section" class="control">
+        <h3>Search</h3>
         <form id="search_form" action=""  method="post">
-          <p class="search_title">Search <input type="text" class="text-input" id="search" value="" /></p>
+          <p class="search_title"><input type="text" class="text-input" id="search" value="" /></p>
         </form>
       </div>
     </div>
     <div id="main" role="main">
-      <div class="row">
-        <div class="col-md-2" id="side">
-          <h3>Info</h3>
+      <div class="content row">
+        <div class="col-md-4" id="side">
+          <h4 id="infoTitle"></h4>
+          <div id="info"></div>
         </div>
-        <div class="col-md-10" id="vis">
+        <div class="col-md-8" id="vis">
         </div>
       </div>
     </div>

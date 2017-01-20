@@ -13,7 +13,6 @@ function network() {
   // variables to refect the current settings
   // of the visualization
   var layout = 'force';
-  var filter = 'all';
   var sort = 'songs';
 
   // 'global' variables for the network
@@ -27,7 +26,7 @@ function network() {
   var showEdges = true;
   var chargePower = 0.04;
 
-  var minEdgeCount = 18;
+  var minEdgeCount = 8;
 
 
   // colors for nodes
@@ -35,7 +34,7 @@ function network() {
 
   // tooltip for mouseover functionality
   // implemented in tooltip.js
-  var tooltip = floatingTooltip('network-tooltip', 200);
+  // var tooltip = floatingTooltip('network-tooltip', 200);
 
   /*
   * Charge function used to set the strength of
@@ -123,6 +122,10 @@ function network() {
     g.append('g')
       .attr('class', 'nodes');
 
+    g.append('g')
+      .attr('class', 'titles');
+
+
     svg.call(d3.zoom()
       .scaleExtent([1 / 2, 8])
       .on('zoom', zoomed));
@@ -155,8 +158,7 @@ function network() {
     if (layout === 'force') {
       setupNetworkLayout(filteredEdges);
     } else {
-      var artists = sortArtists(filteredNodes, filteredEdges);
-      setupRadialLayout(artists);
+      setupRadialLayout();
     }
 
     renderNodes(filteredNodes);
@@ -210,7 +212,8 @@ function network() {
   *  Reusing a force name will override any
   *  existing force attached to it.
   */
-  function setupRadialLayout(artists) {
+  function setupRadialLayout() {
+
     // we don't want the center force
     // or links force affecting the network
     // in radial mode - so kill them.
@@ -228,20 +231,20 @@ function network() {
     var groupCenters = radialLayout()
       .center({ x: width / 2, y: (height / 2) })
       .radius(200)
-      .increment(18)
+      .increment(2)
       .keys(artists);
 
     // use groupCenters to adjust x position of
     // nodes with an x force
     var xForce = d3.forceX()
       .strength(0.02)
-      .x(function (d) { return groupCenters(d.artist).x; });
+      .x(function (d) { return groupCenters(d.id).x; });
 
     // use groupCenters to adjust y position of
     // nodes with an y force
     var yForce = d3.forceY()
       .strength(0.02)
-      .y(function (d) { return groupCenters(d.artist).y; });
+      .y(function (d) { return groupCenters(d.id).y; });
 
     // add these forces to the simulation
     simulation.force('x', xForce);
@@ -287,7 +290,7 @@ function network() {
     // });
 
     var newEdgesData = edgesData.filter(function (d) {
-      return d.count > minEdgeCount;
+      return d.count >= minEdgeCount;
     });
 
     return newEdgesData;
@@ -350,12 +353,13 @@ function network() {
   */
   function setupData(data) {
 
-    // initialize circle radius scale
     var countExtent = d3.extent(data.links, function (d) { return d.count; });
+
     console.log(countExtent)
-    var edgeScale = d3.scaleLog()
+
+    var edgeScale = d3.scaleLinear()
       .domain(countExtent)
-      .range([1, 6]);
+      .range([1, 14]);
 
     var opacityScale = d3.scaleLinear()
       .domain(countExtent)
@@ -373,8 +377,6 @@ function network() {
     });
 
     data.links.forEach(function (e) {
-      // add radius to the node so we can use it later
-      // n.radius = radiusScale(n.playcount);
       e.width = edgeScale(e.count);
       e.opacity = opacityScale(e.count);
       linkedByIndex[e.id] = e.count;
@@ -395,41 +397,6 @@ function network() {
   }
 
   /*
-  * Used in the radial layout, this
-  * sorts artists based on links or song count
-  * which will affect the order of the node clusters.
-  */
-  function sortArtists(nodesData, edgesData) {
-    var artists = [];
-    var counts = {};
-    if (sort === 'links') {
-      edgesData.forEach(function (e) {
-        counts[e.source.artist] = counts[e.source.artist] ? counts[e.source.artist] : 0;
-        counts[e.source.artist] += 1;
-        counts[e.target.artist] = counts[e.target.artist] ? counts[e.target.artist] : 0;
-        counts[e.source.artist] += 1;
-
-        nodesData.forEach(function (n) {
-          counts[n.artist] = counts[n.artist] ? counts[n.artist] : 0;
-        });
-
-        artists = d3.entries(counts).sort(function (a, b) { return b.value - a.value; });
-        artists = artists.map(function (a) { return a.key; });
-      });
-    } else {
-      nodesData.forEach(function (n) {
-        counts[n.artist] = counts[n.artist] ? counts[n.artist] : 0;
-        counts[n.artist] += 1;
-        artists = d3.entries(counts).sort(function (a, b) { return b.value - a.value; });
-        artists = artists.map(function (a) { return a.key; });
-      });
-    }
-
-    return artists;
-  }
-
-
-  /*
   * Public function to update the layout.
   * Most of the work happens in render()
   */
@@ -446,16 +413,6 @@ function network() {
   */
   chart.updateFilter = function (newFilter) {
     minEdgeCount = newFilter;
-    render();
-    return this;
-  };
-
-  /*
-  * Public function to update sort
-  * Most of the work happens in render()
-  */
-  chart.updateSort = function (newSort) {
-    sort = newSort;
     render();
     return this;
   };
@@ -491,6 +448,45 @@ function network() {
     });
   };
 
+  function getNotThem(d, edgeData) {
+    if (d.id == edgeData.source.id) {
+      return edgeData.target;
+    } else {
+      return edgeData.source;
+    }
+  }
+  function showDetails(d) {
+    var out = '';
+    var details = d3.select('#info');
+    var infoTitle = d3.select('#infoTitle')
+    infoTitle.html(d.name);
+
+    var connections = [];
+
+    edges.filter(function (l) { return (l.source.id === d.id || l.target.id === d.id); }).each(function (e) { connections.push(e); })
+
+    out += '<p class="movieCount">has ' + connections.length + ' connections</p>';
+
+    connections.forEach(function (c) {
+      var collab = '<div class="aConnection">';
+      collab += '<p class="connTitle">' + getNotThem(d, c).name + ' ' +
+        '<span class="connCount">(' + c.movies.length + ' movies)</span>' + '</p>';
+
+      var movieList = '<ul>';
+      c.movies.forEach(function (m) {
+        movieList += '<li>' + movieDetails[m].title + '</li>';
+      });
+      movieList += '</ul>';
+      collab += movieList;
+      collab += '</div>';
+      out += collab;
+    });
+
+    console.log(connections)
+
+    details.html(out);
+  }
+
   /*
   * Callback for mouseover event.
   * Highlights a node and connected edges.
@@ -499,7 +495,23 @@ function network() {
     var content = '<p class="main">' + d.name + '</span></p>';
     content += '<hr class="tooltip-hr">';
     content += '<p class="main">' + d.artist + '</span></p>';
-    tooltip.showTooltip(content, d3.event);
+    // tooltip.showTooltip(content, d3.event);
+
+    var titles = svg.select('.titles').selectAll('.title')
+      .data([d])
+    var titlesE = titles.enter()
+      .append('g')
+      .attr('class', 'title')
+
+    titlesE.append('text').attr('x', function (e) { return e.x; })
+      .attr('y', function (e) { return e.y; })
+      .attr('dx', 10)
+      .attr('dy', 4)
+      .attr('pointer-events', 'None')
+      .text(function (e) { return e.name; })
+
+
+    showDetails(d);
 
     if (showEdges) {
       edges
@@ -538,8 +550,8 @@ function network() {
   * Uses linkedByIndex object.
   */
   function neighboring(a, b) {
-    return linkedByIndex[a.id + ':' + b.id] > minEdgeCount ||
-      linkedByIndex[b.id + ':' + a.id] > minEdgeCount;
+    return linkedByIndex[a.id + ':' + b.id] >= minEdgeCount ||
+      linkedByIndex[b.id + ':' + a.id] >= minEdgeCount;
   }
 
   /*
@@ -547,7 +559,9 @@ function network() {
   * Unhighlights node.
   */
   function unhighlightNode() {
-    tooltip.hideTooltip();
+    // tooltip.hideTooltip();
+
+    svg.select('.titles').selectAll('.title').remove();
 
     // reset edges
     edges
@@ -625,8 +639,11 @@ function setupNodesEdges(rawData) {
               source: actor1, target: actor2,
               count: 0, movies: [] };
           }
-          edgesHash[edgeId].count += 1;
-          edgesHash[edgeId].movies.push(movie.id);
+
+          if (!edgesHash[edgeId].movies.includes(movie.id)) {
+            edgesHash[edgeId].count += 1;
+            edgesHash[edgeId].movies.push(movie.id);
+          }
         }
       }
     }
