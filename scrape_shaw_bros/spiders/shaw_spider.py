@@ -78,5 +78,7 @@ class ShawSpider(scrapy.Spider):
             likes = int(likes)
         movie['likes'] = likes
 
+        movie['url'] = response.url
+
 
         yield movie

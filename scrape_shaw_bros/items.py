@@ -20,3 +20,4 @@ class Movie(scrapy.Item):
     avg_rating = scrapy.Field()
     watches = scrapy.Field()
     likes = scrapy.Field()
+    url = scrapy.Field()
