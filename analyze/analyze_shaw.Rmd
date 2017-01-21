@@ -371,7 +371,7 @@ Rows are actors. Columns are movies.
 Filter out movies with few co-occuring actors
 
 ```{r}
-cast_movie_df_filtered <- cast_movie_df %>% colSums(.)
+cast_movie_df_filtered <- cast_movie_matrix %>% colSums(.)
 ```
 
 
@@ -478,6 +478,7 @@ plot(g, edge.width = E(g)$weight,
      edge.color = hsv(0,0.2,0.5,alpha=0.2)
 
 )
+
 ```
 
 
@@ -505,7 +506,7 @@ plot(g, edge.width = E(g)$weight,
      #vertex.size = V(g)$betweenness,
      vertex.size = 5,
      vertex.color=V(g)$color,
-     vertex.frame.color='steelblue', 		#the color of the border of the dots 
+     vertex.frame.color='white', 		#the color of the border of the dots 
      vertex.label.color='black',		#the color of the name labels
      vertex.label.font=2,			#the font of the name labels
      vertex.label.cex=1,			#specifies the size of the font of the labels. can also be made to vary
@@ -521,20 +522,4 @@ cooccur_df <- cooccur_df %>% select(name, everything())
 write_delim(cooccur_df, 'shaw_cooccurance.csv', delim = ';')
 ```
 
-```{r}
 
-```
-
-
-
-## Other
-
-## R Markdown Notes
-
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
-
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
-
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
-
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file).
