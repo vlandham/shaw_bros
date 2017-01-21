@@ -20,45 +20,41 @@
   <div id="container" class="container">
     <header>
     <h1>Shaw Brothers Actors Network</h1>
-    <p>Actors who have appeared together in the same movie are linked.</p>
+    <p>Actors who have appeared together in the same movie are linked. Hover and click nodes for more info. Zoom and pan the network too!</p>
+      <p>Data comes from <a href="https://letterboxd.com/jewbo23/list/shaw-brothers-martial-arts-films/detail/">Letterboxd</a>. Analysis of this data is <a href="">here</a>.</p>
     </header>
 
     <div id="controls">
       <div id="layouts" class="control">
-        <h3>Layout</h3>
         <a id="force" class="active">Force Directed</a>
         <a id="radial">Circle</a>
       </div>
       <div id="filters" class="control">
-        <h3>Filter</h3>
-        <p>Minimum Movie count: <span id="minCountNum">18</span></p>
-        <input type="range" min="1" max="57" value="18" id="minCount">
+        <p>Minimum Movie count: <span id="minCountNum">10</span></p>
+        <input type="range" min="1" max="30" value="10" id="minCount">
       </div>
       <div id="search_section" class="control">
-        <h3>Search</h3>
         <form id="search_form" action=""  method="post">
-          <p class="search_title"><input type="text" class="text-input" id="search" value="" /></p>
+          <p class="search_title"><input type="text" class="text-input" id="search" value="" placeholder="Search for an actor"/></p>
         </form>
       </div>
     </div>
     <div id="main" role="main">
-      <div class="content row">
-        <div class="col-md-4" id="side">
+      <div class="content">
+        <div id="side">
           <h4 id="infoTitle"></h4>
           <div id="info"></div>
         </div>
-        <div class="col-md-8" id="vis">
+        <div id="vis">
         </div>
       </div>
     </div>
     <footer>
-      <p>Analysis of this data is <a href="">here</a>.</p>
 
     </footer>
   </div> <!--! end of #container -->
 
   <script src="https://d3js.org/d3.v4.min.js"></script>
-  <script src="src/tooltip.js"></script>
   <script src="src/radial_layout.js"></script>
   <script src="src/network.js"></script>
 

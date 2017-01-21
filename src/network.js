@@ -1,6 +1,7 @@
 
 var movieDetails = {};
 var strokeColor = '#ddd';
+var nodeColor = '#444';
 var highlightColor = 'tomato';
 /*
  * network
@@ -9,11 +10,11 @@ function network() {
   // Constants for sizing
   var width = 960;
   var height = 800;
+  var parentNode = null;
 
   // variables to refect the current settings
   // of the visualization
   var layout = 'force';
-  var sort = 'songs';
 
   // 'global' variables for the network
   // these will be populated in the setup
@@ -26,7 +27,8 @@ function network() {
   var showEdges = true;
   var chargePower = 0.04;
 
-  var minEdgeCount = 8;
+  var minEdgeCount = 10;
+  var stickyActor = null;
 
 
   // colors for nodes
@@ -74,6 +76,10 @@ function network() {
         .attr('x2', 0)
         .attr('y2', 0);
     }
+
+    svg.select('.titles').selectAll('.title')
+      .attr('x', function (d) { return d.x; })
+      .attr('y', function (d) { return d.y; });
   }
 
   function ended() {
@@ -105,12 +111,26 @@ function network() {
   var chart = function (selector, rawData) {
     allData = setupData(rawData);
 
+    parentNode = selector;
+
+    updateWidthHeight();
+
     // create a SVG element inside the provided selector
     // with desired size.
+    // svg = d3.select(selector)
+    //   .append('svg')
+    //   .attr('width', width)
+    //   .attr('height', height);
+
     svg = d3.select(selector)
-      .append('svg')
-      .attr('width', width)
-      .attr('height', height);
+     .append("div")
+     .classed("svg-container", true) //container class to make it responsive
+     .append("svg")
+     //responsive SVG needs these 2 attributes and no width and height attr
+     .attr("preserveAspectRatio", "xMinYMin meet")
+     .attr("viewBox", "0 0 800 600")
+     //class to make it responsive
+     .classed("svg-content-responsive", true);
 
     // add some groups for edges and nodes
     var g = svg.append('g')
@@ -131,7 +151,7 @@ function network() {
       .on('zoom', zoomed));
 
     function zoomed() {
-      g.attr("transform", d3.event.transform);
+      g.attr('transform', d3.event.transform);
     }
 
     // render the network
@@ -158,7 +178,7 @@ function network() {
     if (layout === 'force') {
       setupNetworkLayout(filteredEdges);
     } else {
-      setupRadialLayout();
+      setupRadialLayout(filteredNodes);
     }
 
     renderNodes(filteredNodes);
@@ -212,7 +232,8 @@ function network() {
   *  Reusing a force name will override any
   *  existing force attached to it.
   */
-  function setupRadialLayout() {
+  function setupRadialLayout(filteredNodes) {
+    var ids = filteredNodes.map(function (d) { return d.id; });
 
     // we don't want the center force
     // or links force affecting the network
@@ -229,10 +250,10 @@ function network() {
     // groupCenters will have an {x: y:} object for
     // each artist in artists.
     var groupCenters = radialLayout()
-      .center({ x: width / 2, y: (height / 2) })
+      .center({ x: (width / 2), y: (height / 2) })
       .radius(200)
       .increment(2)
-      .keys(artists);
+      .keys(ids);
 
     // use groupCenters to adjust x position of
     // nodes with an x force
@@ -262,19 +283,6 @@ function network() {
       return (sourceMap.has(d.id) || targetMap.has(d.id));
     });
 
-    // var newNodesData = nodesData;
-    // if (filter === 'popular' || filter === 'obscure') {
-    //   var playcounts = nodesData.map(function (d) { return d.playcount; });
-    //   playcounts = playcounts.sort(d3.ascending);
-    //   var cutoff = d3.quantile(playcounts, 0.5);
-    //   newNodesData = nodesData.filter(function (d) {
-    //     if (filter === 'popular') {
-    //       return d.playcount > cutoff;
-    //     }
-    //     return d.playcount <= cutoff;
-    //   });
-    // }
-
     return newNodesData;
   }
 
@@ -282,13 +290,7 @@ function network() {
   * Filter down edges based on what nodes are
   * currently present in the network.
   */
-  function filterEdges(edgesData, nodesData) {
-    var nodesMap = d3.map(nodesData, function (d) { return d.id; });
-
-    // var newEdgesData = edgesData.filter(function (d) {
-    //   return nodesMap.get(d.source.id) && nodesMap.get(d.target.id);
-    // });
-
+  function filterEdges(edgesData) {
     var newEdgesData = edgesData.filter(function (d) {
       return d.count >= minEdgeCount;
     });
@@ -309,15 +311,16 @@ function network() {
       .attr('cx', function (d) { return d.x; })
       .attr('cy', function (d) { return d.y; })
       .on('mouseover', highlightNode)
-      .on('mouseout', unhighlightNode);
+      .on('mouseout', unhighlightNode)
+      .on('click', setStickyActor);
 
     nodes.exit().remove();
 
     nodes = nodes.merge(nodesE)
       .attr('r', function (d) { return d.radius; })
-      .style('fill', function (d) { return colorScheme(d.artist); })
+      .style('fill', nodeColor)
       .style('stroke', 'white')
-      // .style('stroke', function (d) { return strokeFor(d); })
+      .style('cursor', 'pointer')
       .style('stroke-width', 1.0);
   }
 
@@ -331,17 +334,14 @@ function network() {
 
 
     var edgesE = edges.enter().append('line')
-      .classed('edge', true);
+      .classed('edge', true)
+      .style('stroke-width', function (e) { return e.width; })
+      .style('stroke', strokeColor);
 
     edges.exit().remove();
 
     edges = edges.merge(edgesE)
       .style('stroke-opacity', function (e) { return e.opacity; })
-      .style('stroke-width', function (e) { return e.width; })
-      .style('stroke', strokeColor);
-
-
-    // edges = edges.merge(edgesE);
   }
 
   /*
@@ -352,10 +352,7 @@ function network() {
   * edge data.
   */
   function setupData(data) {
-
     var countExtent = d3.extent(data.links, function (d) { return d.count; });
-
-    console.log(countExtent)
 
     var edgeScale = d3.scaleLinear()
       .domain(countExtent)
@@ -364,11 +361,6 @@ function network() {
     var opacityScale = d3.scaleLinear()
       .domain(countExtent)
       .range([0.2, 1.0]);
-
-    // var radiusScale = d3.scalePow()
-    //   .exponent(0.5)
-    //   .range([3, 12])
-    //   .domain(countExtent);
 
     data.nodes.forEach(function (n) {
       // add radius to the node so we can use it later
@@ -413,6 +405,8 @@ function network() {
   */
   chart.updateFilter = function (newFilter) {
     minEdgeCount = newFilter;
+    stickyActor = null;
+    unhighlightNode();
     render();
     return this;
   };
@@ -436,34 +430,36 @@ function network() {
       var element = d3.select(this);
       var match = d.name.toLowerCase().search(searchRegEx);
       if (searchTerm.length > 0 && match >= 0) {
-        element.style('fill', '#F38630')
-          .style('stroke-width', 2.0)
-          .style('stroke', '#555');
+        element.style('fill', highlightColor)
+          .style('stroke-width', 2.0);
+          // .style('stroke', '#555');
         d.searched = true;
       } else {
         d.searched = false;
-        element.style('fill', function (e) { return colorScheme(e.artist); })
+        element.style('fill', nodeColor)
           .style('stroke-width', 1.0);
       }
     });
   };
 
   function getNotThem(d, edgeData) {
-    if (d.id == edgeData.source.id) {
+    if (d.id === edgeData.source.id) {
       return edgeData.target;
-    } else {
-      return edgeData.source;
     }
+    return edgeData.source;
   }
+
   function showDetails(d) {
     var out = '';
     var details = d3.select('#info');
-    var infoTitle = d3.select('#infoTitle')
+    var infoTitle = d3.select('#infoTitle');
     infoTitle.html(d.name);
 
     var connections = [];
 
-    edges.filter(function (l) { return (l.source.id === d.id || l.target.id === d.id); }).each(function (e) { connections.push(e); })
+    edges.filter(function (l) {
+      return (l.source.id === d.id || l.target.id === d.id);
+    }).each(function (e) { connections.push(e); });
 
     out += '<p class="movieCount">has ' + connections.length + ' connections</p>';
 
@@ -474,7 +470,9 @@ function network() {
 
       var movieList = '<ul>';
       c.movies.forEach(function (m) {
-        movieList += '<li>' + movieDetails[m].title + '</li>';
+        var movie = '<li>' + '<a href="' + movieDetails[m].url + '" target="_blank">' +
+          movieDetails[m].title + '</a>' + '</li>';
+        movieList += movie;
       });
       movieList += '</ul>';
       collab += movieList;
@@ -482,9 +480,35 @@ function network() {
       out += collab;
     });
 
-    console.log(connections)
-
     details.html(out);
+  }
+
+  function setStickyActor(d) {
+    if (stickyActor && stickyActor.id === d.id) {
+      // stickyActor = null;
+      stickyActor = d;
+    } else {
+      stickyActor = d;
+    }
+    unhighlightNode();
+    highlightNode(d);
+  }
+
+  function addTitles(d) {
+    var titles = svg.select('.titles').selectAll('.title')
+      .data(d);
+
+    var titlesE = titles.enter()
+      .append('text')
+      .attr('class', 'title');
+
+    titles.merge(titlesE)
+      .attr('x', function (e) { return e.x; })
+      .attr('y', function (e) { return e.y; })
+      .attr('dx', 10)
+      .attr('dy', 4)
+      .attr('pointer-events', 'None')
+      .text(function (e) { return e.name; });
   }
 
   /*
@@ -492,24 +516,11 @@ function network() {
   * Highlights a node and connected edges.
   */
   function highlightNode(d) {
-    var content = '<p class="main">' + d.name + '</span></p>';
-    content += '<hr class="tooltip-hr">';
-    content += '<p class="main">' + d.artist + '</span></p>';
-    // tooltip.showTooltip(content, d3.event);
-
-    var titles = svg.select('.titles').selectAll('.title')
-      .data([d])
-    var titlesE = titles.enter()
-      .append('g')
-      .attr('class', 'title')
-
-    titlesE.append('text').attr('x', function (e) { return e.x; })
-      .attr('y', function (e) { return e.y; })
-      .attr('dx', 10)
-      .attr('dy', 4)
-      .attr('pointer-events', 'None')
-      .text(function (e) { return e.name; })
-
+    var titleD = [d];
+    if (stickyActor) {
+      titleD.push(stickyActor);
+    }
+    addTitles(titleD);
 
     showDetails(d);
 
@@ -518,20 +529,36 @@ function network() {
         .style('stroke', function (l) {
           if (l.source.id === d.id || l.target.id === d.id) {
             return 'tomato';
+          } else if (stickyActor &&
+            (l.source.id === stickyActor.id || l.target.id === stickyActor.id)) {
+            return 'tomato';
           }
           return strokeColor;
         })
         .style('stroke-opacity', function (l) {
           if (l.source.id === d.id || l.target.id === d.id) {
-            return 1.0;
+            return 0.8;
+          } else if (stickyActor &&
+            (l.source.id === stickyActor.id || l.target.id === stickyActor.id)) {
+            return 0.5;
           }
           return 0.00;
         });
       // higlight connected nodes
       nodes
+        .style('fill', function (n) {
+          if (d.id === n.id || n.searched || neighboring(d, n)) {
+            return highlightColor;
+          } else if (stickyActor && n.id === stickyActor.id) {
+            return highlightColor;
+          }
+          return nodeColor;
+        })
         .style('stroke', function (n) {
           if (d.id === n.id || n.searched || neighboring(d, n)) {
             return '#555';
+          } else if (stickyActor && n.id === stickyActor.id) {
+            return 'white';
           }
           return 'white';
         })
@@ -543,6 +570,18 @@ function network() {
         });
     }
   }
+
+  function updateWidthHeight() {
+    height = d3.select(parentNode).node().clientHeight;
+    width = d3.select(parentNode).node().clientWidth;
+  }
+
+  function onWindowResize() {
+    updateWidthHeight();
+    render();
+  }
+
+  d3.select(window).on('resize.updatesvg', onWindowResize);
 
   /*
   * Helper function returns not-false
@@ -561,15 +600,39 @@ function network() {
   function unhighlightNode() {
     // tooltip.hideTooltip();
 
+    if (stickyActor) {
+      showDetails(stickyActor);
+    }
     svg.select('.titles').selectAll('.title').remove();
+    if (stickyActor) {
+      addTitles([stickyActor]);
+    }
 
     // reset edges
     edges
-      .style('stroke', strokeColor)
-      .style('stroke-opacity', function (e) { return e.opactiy; });
+      .style('stroke', function (l) {
+        if (stickyActor &&
+          (l.source.id === stickyActor.id || l.target.id === stickyActor.id)) {
+          return highlightColor;
+        }
+        return strokeColor;
+      })
+      .style('stroke-opacity', function (l) {
+        if (stickyActor &&
+          (l.source.id === stickyActor.id || l.target.id === stickyActor.id)) {
+          return 0.5;
+        }
+        return l.opactiy;
+      });
 
     // reset nodes
     nodes
+      .style('fill', function (n) {
+        if (stickyActor && n.id === stickyActor.id) {
+          return highlightColor;
+        }
+        return nodeColor;
+      })
       .style('stroke', 'white')
       .style('stroke-width', 1.0);
   }
@@ -703,21 +766,6 @@ function setupMenu() {
     var newFilter = +this.value;
     myNetwork.updateFilter(newFilter);
     d3.select('#minCountNum').text(newFilter);
-  });
-
-  // sort buttons
-  d3.selectAll('#sorts a').on('click', function () {
-    var newSort = d3.select(this).attr('id');
-    activate('sorts', newSort);
-    myNetwork.updateSort(newSort);
-  });
-
-  // select song drop down
-  d3.select('#song_select').on('change', function () {
-    var songFile = d3.select(this).property('value');
-    d3.json('data/' + songFile, function (json) {
-      myNetwork.updateData(json);
-    });
   });
 
   // search

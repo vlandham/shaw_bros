@@ -1,36 +1,13 @@
-# Interactive Network Visualization
+# Shaw Brothers Actor Network Analysis
 
-This is the code for the Interactive Network Visualization using D3 tutorial.
+Part of the analysis of shaw brothers films.
 
-## Changes
+Check out the [blog post]()
 
-The code here has been updated from the original tutorial in the following ways:
+See this [network live](http://vallandingham.me/shaw_bros/)
 
-* Converted everything from Coffeescript to plain old Javascript.
-* Uses D3 version 4 - which includes significant changes to the force layout.
-* Removed jQuery and other unnecessary libraries
-* Moved the code around a bit to make things a bit clearer.
+Check out the [Analysis Notebook](http://vallandingham.me/shaw_bros/analyze/analyze_shaw.nb.html)
 
-Otherwise, most of the functionality should be about the same.
-
-## Code
-
-Most of the interesting code is in:
-
-```
-src/network.js
-```
-
-So you should start there.
-
-There are a few other javascript files:
-
-* `src/radial_layout.js` includes a layout function for positioning things around a circle.
-* `src/tooltip.js` implements a simple tooltip that is used on hover.
-
-I've attempted to add the keyword `@v4` in the comments to highlight significant changes in the implementation needed when working with D3v4.
-
-Enjoy!
 
 ## Running
 
@@ -47,7 +24,7 @@ python --version
 If it is python 2.xx, then run the following command:
 
 ```
-cd /path/to/interactive-network-v4
+cd /path/to/shaw_bros
 
 python -m SimpleHTTPServer 3000
 ```
@@ -55,7 +32,7 @@ python -m SimpleHTTPServer 3000
 If it is python 3.xx, you can use:
 
 ```
-cd /path/to/interactive-network-v4
+cd /path/to/shaw_bros
 
 python3 -m http.server 3000
 ```
@@ -74,10 +51,4 @@ http-server -p 3000
 
 ## Data
 
-The data comes from Last FM. A script used to create the json files in `data` can be found in:
-
-```
-tools/lastfm_network.rb
-```
-
-This is a ruby script, and may require additional packages to run.
+The data comes from [Letterboxd](https://letterboxd.com). Check out the `scrape` directory for inspiration.

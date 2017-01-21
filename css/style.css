@@ -1,6 +1,10 @@
 body {
   font-family: Arial, sans-serif;
-  height: 100%;
+}
+
+html,
+body {
+    height: 100vh;
 }
 
 a, a:visited {
@@ -16,6 +20,8 @@ a, a:visited {
 
 #main {
   clear: both;
+  width: 100%;
+  height: 100%;
 }
 
 #controls {
@@ -27,6 +33,10 @@ a, a:visited {
 .control {
   float: left;
   padding-left: 20px;
+}
+
+#layouts {
+  padding-left: 0;
 }
 
 .control a {
@@ -104,23 +114,50 @@ hr.tooltip-hr {
 }
 
 .content {
-  /*position:relative;
-  width:100%;
-  height:100%;*/
+  position: relative;
+  width: 100%;
+  height: 90vh;
+  /*height: 550px;*/
 }
 
 #side {
-  /*position:fixed;
+  position: absolute;
   top:0;
   left:0;
   height:100%;
-  padding:0;
-  overflow-y:scroll;*/
-
   overflow-y:scroll;
+  z-index: 100;
+  width: 250px;
+  height: 100%;
+}
+
+#info ul {
+  padding-left: 20px;
 }
 
 #vis {
+  position: absolute;
+  top:0;
+  left:251px;
+  width: calc(100% - 251px);
+  height: 100%;
+  /*height: calc(100% - 10%);*/
+}
+
+.svg-container {
+    display: inline-block;
+    position: relative;
+    /*width: calc(100% - 251px);*/
+    width: 100%;
+    padding-bottom: 100%; /* aspect ratio */
+    vertical-align: top;
+    overflow: hidden;
+}
+.svg-content-responsive {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
 }
 
 /**/
