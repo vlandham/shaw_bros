@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>New Titles for Kung-Fu Movies</title>
+  <meta name="description" content="Using word2vec to generate sometimes fun new titles.">
+  <meta name="author" content="Jim Vallandingham">
+
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+
+  <link rel="stylesheet" href="css/reset.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/new_titles.css">
+
+</head>
+
+<body>
+  <div class="container-fluid">
+  <div class="row">
+    <form class="form-horizontal">
+      <div class="form-group form-group-lg">
+        <label class="col-sm-2 control-label" for="formGroupInputLarge">Large label</label>
+        <div class="col-sm-4">
+          <select id="titleSelect" class="form-control input-lg">
+            <option value="america">China to America</option>
+            <option value="germany">China to Germany</option>
+            <option value="australia">China to Australia</option>
+
+          </select>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="row">
+    <div class="col-sm-2">
+        <h4>Original:</h4>
+    </div>
+    <div class="col-sm-4">
+      <div class="title">
+        <p id="old">The Temple of the Red Lotus</p>
+
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-2">
+        <h4>Becomes:</h4>
+    </div>
+    <div class="col-sm-4">
+      <div class="title">
+        <p id="new">The Temple of the Red Lotus</p>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="col-sm-6">
+      <button type="button" id="another" class="btn btn-default pull-right">Another Title</button>
+    </div>
+  </div>
+</div>
+
+
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="src/titles.js"></script>
+
+</body>
+</html>
