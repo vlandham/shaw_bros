@@ -20,7 +20,6 @@ library(tidyjson)
 library(tidyverse)
 library(forcats)
 
-source("v_theme.R")
 ```
 
 ## Read in Data
@@ -415,11 +414,37 @@ films_top_actor %>%
   theme_fivethirtyeight() + 
   # angle label text
   theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position="none")
-ggsave("imgs/top_actors_by_year.png", width = 6, height = 10)
+ggsave("imgs/top_actors_by_year.png", width = 8, height = 10)
 ```
 
 ```{r}
+year_count <- films %>% select(year) %>% unique() %>% nrow()
+actor_active_years <- films_top_actor %>% group_by(name) %>% 
+  summarise(active_years = length(unique(year)), 
+            percent_active = active_years / year_count, 
+            start = min(as.numeric(year)), 
+            end = max(as.numeric(year))) %>% 
+  arrange(percent_active)
 
+
+actor_active_years %>% 
+  ggplot(aes(x = fct_inorder(name), y = percent_active)) + 
+  geom_bar(stat = "identity") +
+  coord_flip() + 
+  scale_y_continuous(labels = percent) + 
+  labs(title = "Percent of Years Active by Actor") +
+  theme_fivethirtyeight()
+ggsave("imgs/actor_percent_active.png", width = 8, height = 5)
+```
+
+```{r}
+actor_active_years %>% gather(caps, cap_year, start, end) %>%
+  ggplot(aes(x = cap_year, y = fct_inorder(name))) +
+  geom_point(size = 3) + 
+  geom_path(aes(group = name)) +
+  labs(title = "Shaw Brother Career Span by Actor") +
+  theme_fivethirtyeight()
+ggsave("imgs/actor_career_span.png", width = 8, height = 5)    
 ```
 
 
@@ -479,15 +504,6 @@ See ordering:
 ```{r}
 ordering <-hc_norm_cast$labels[hc_norm_cast$order]
 ordering
-```
-
-```{r}
-ordered_films <- popular_cast %>% arrange(year) %>%
-  mutate(film_index = as.numeric(fct_inorder(factor(title))), cast_name = factor(name, levels = ordering))
-
-ordered_films %>% ggplot(aes(film_index, cast_name)) +
-    geom_point() +
-    geom_path(aes(group = film_index))
 ```
 
 
@@ -602,7 +618,7 @@ plot(g, edge.width = E(g)$weight,
 cooccur_df <- data.frame(cooccur, col.names = colnames(cooccur))
 cooccur_df$name <- row.names(cooccur) 
 cooccur_df <- cooccur_df %>% select(name, everything())
-write_delim(cooccur_df, 'shaw_cooccurance.csv', delim = ';')
+#write_delim(cooccur_df, 'shaw_cooccurance.csv', delim = ';')
 ```
 
 
