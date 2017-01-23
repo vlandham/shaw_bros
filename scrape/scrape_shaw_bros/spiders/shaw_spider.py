@@ -5,6 +5,7 @@ SPIDER
 '''
 import scrapy
 import urlparse
+import re
 
 from scrape_shaw_bros.items import Movie
 
@@ -79,6 +80,15 @@ class ShawSpider(scrapy.Spider):
         movie['likes'] = likes
 
         movie['url'] = response.url
+
+        min_text = response.css(".text-footer::text").extract_first()
+        if min_text is not None:
+            match = re.search(r'(\d+)\s*mins', min_text)
+            if match:
+                mins = int(match.group(1))
+                movie['time'] = mins
+
+
 
 
         yield movie

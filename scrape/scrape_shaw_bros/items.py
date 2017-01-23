@@ -21,3 +21,4 @@ class Movie(scrapy.Item):
     watches = scrapy.Field()
     likes = scrapy.Field()
     url = scrapy.Field()
+    time = scrapy.Field()

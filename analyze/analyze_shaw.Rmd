@@ -28,7 +28,7 @@ source("v_theme.R")
 First, we need to get the data somehow. Its in JSON format, so let's read the JSON into a string.
 
 ```{r}
-filename = '../out/shaw.json'
+filename = '../scrape/out/shaw.json'
 shaw_json <- paste(readLines(filename), collapse="")
 ```
 
@@ -40,9 +40,10 @@ films <- shaw_json %>% as.tbl_json %>% gather_array %>%
     title = jstring("title"),
     director = jstring('director'),
     year = jstring('year'),
-    avg_rating = jstring('avg_rating'),
-    watches = jstring("watches"),
-    likes = jstring("likes")
+    avg_rating = jnumber('avg_rating'),
+    watches = jnumber("watches"),
+    likes = jnumber("likes"),
+    time = jnumber("time")
   )
 
 films %>% head(n = 5) %>% select(title, director, year)
@@ -58,9 +59,10 @@ cast <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
     title = jstring("title"),
     director = jstring('director'),
     year = jstring('year'),
-    avg_rating = jstring('avg_rating'),
-    watches = jstring("watches"),
-    likes = jstring("likes")
+    avg_rating = jnumber('avg_rating'),
+    watches = jnumber("watches"),
+    likes = jnumber("likes"),
+    time = jnumber("time")
   ) %>% enter_object("cast") %>% gather_array() %>%
   spread_values(
     name = jstring("name")
@@ -77,9 +79,9 @@ characters <- shaw_json  %>% as.tbl_json  %>% gather_array %>%
     title = jstring("title"),
     director = jstring('director'),
     year = jstring('year'),
-    avg_rating = jstring('avg_rating'),
-    watches = jstring("watches"),
-    likes = jstring("likes")
+    avg_rating = jnumber('avg_rating'),
+    watches = jnumber("watches"),
+    likes = jnumber("likes")
   ) %>% enter_object("characters") %>% gather_array() %>%
   spread_values(
     name = jstring("name")
@@ -92,25 +94,24 @@ Real quick, let's get a sense of the number of films in our data.
 nrow(films)
 ```
 
-260! That's a lot of Kung-Fu. Let's take a look at these films from a few different angles. We can start with release year.
+260! That's a lot of Kung Fu. Let's take a look at these films from a few different angles. We can start with release year.
 
 ### Shaw Brothers, Through The Ages
 
 So, I said retro, when exactly were these movies made?
 
 ```{r}
-source("v_theme.R")
+
 films %>% ggplot(aes(x = year)) +
   geom_bar() +
   labs(title = 'Shaw Bros Films by Year') + 
-  #fte_theme()
   theme_fivethirtyeight()
 ggsave("imgs/films_by_year.png", width = 8, height = 5)
 ```
 
-The first Kung-fu Shaw Brothers film in this data set is [Temple of the Red Lotus](https://letterboxd.com/film/temple-of-the-red-lotus/) from 1965. From the reviews, it sounds like it was a bit rough around the edges - but thats about what you would expect from this burgeoning genre.
+The first Kung fu Shaw Brothers film in this data set is [Temple of the Red Lotus](https://letterboxd.com/film/temple-of-the-red-lotus/) from 1965. From the reviews, it sounds like it was a bit rough around the edges - but thats about what you would expect from this burgeoning genre.
 
-The studio hits its stride in the early 70's, with a lull in the mid 70's and another spike in the late 70's, early 80's. Keep in mind that even during the lull, the studio is _still_ putting out 10 or more Kung-fu movies most years. 
+The studio hits its stride in the early 70's, with a lull in the mid 70's and another spike in the late 70's, early 80's. Keep in mind that even during the lull, the studio is _still_ putting out 10 or more Kung fu movies most years. 
 
 
 ### Shaw Brothers Directorial Favorites
@@ -130,7 +131,7 @@ by_director <- films %>% group_by(director) %>% summarise(n = n()) %>% arrange(-
 ggsave("imgs/director_count.png", width = 8, height = 6)
 ```
 
-I'd say! [Chang Cheh](https://en.wikipedia.org/wiki/Chang_Cheh) directed 67 or roughly 26% of all Shaw Brothers Kung-fu!
+I'd say! [Chang Cheh](https://en.wikipedia.org/wiki/Chang_Cheh) directed 67 or roughly 26% of all Shaw Brothers Kung fu!
 
 According to his Wikipedia page, he was known as the "The Godfather of Hong Kong cinema", and rightly so - at least in terms of quantity. 
 
@@ -140,7 +141,7 @@ Let's pull out the top 5 directors, in terms of movie count, and see when they w
 
 # pull out just the top 5 directors
 top_directors <- by_director %>% head(n = 5)
-# filter films to those directed by these titans of kung-fu
+# filter films to those directed by these titans of Kung fu
 films_top_director <- films %>% filter(director %in% top_directors$director)
 
 #plot bar chart
@@ -186,7 +187,89 @@ films_top_director_all %>%
 ggsave("imgs/top_directors_by_year_fill.png", width = 8, height = 5)
 ```
 
+## Other Values over Time
 
+```{r}
+summary(films)
+```
+
+
+```{r}
+film_summary <- films %>% group_by(year) %>% summarise(n = n(), mean_time = mean(time, na.rm = TRUE))
+film_summary %>%
+  ggplot(aes(x = year, y = mean_time)) +
+  geom_bar(stat = "identity") +
+  labs(title = 'Shaw Bros Length by Year (in mins)') + 
+  theme_fivethirtyeight()
+#ggsave("imgs/films_by_year.png", width = 8, height = 5)
+```
+
+```{r}
+films %>%
+  ggplot(aes(x = year, y = time )) +
+  geom_boxplot() +
+  labs(title = 'Shaw Bros Length by Year (in mins)') + 
+  theme_fivethirtyeight()
+
+```
+
+```{r}
+films %>%
+  ggplot(aes(x = year, y = avg_rating )) +
+  geom_boxplot() +
+  labs(title = 'Shaw Bros Rating by Year') + 
+  theme_fivethirtyeight()
+```
+
+
+```{r}
+films %>%
+  ggplot(aes(x = year, y = watches )) +
+  geom_boxplot() +
+  labs(title = 'Shaw Bros Watches by Year') + 
+  theme_fivethirtyeight()
+```
+
+```{r}
+films %>% filter(watches > 200) %>% select(title, year, watches) %>% arrange(-watches)
+```
+
+```{r}
+films  %>%
+  ggplot(aes(x = watches, y = avg_rating)) +
+  geom_point()
+
+```
+
+
+
+```{r}
+films  %>%
+  ggplot(aes(x = watches, y = likes)) +
+  geom_point() + 
+  labs(title = "Watches vs Likes of Kung Fu Movies") +
+  theme_fivethirtyeight()
+
+
+ggsave("imgs/watches_vs_likes.png", width = 8, height = 5)
+```
+
+```{r}
+films  %>%
+  ggplot(aes(x = avg_rating, y = likes)) +
+  geom_point()
+
+```
+
+
+```{r}
+
+films %>%
+  ggplot(aes(x = year, y = likes )) +
+  geom_boxplot() +
+  labs(title = 'Shaw Bros Rating by Year') + 
+  theme_fivethirtyeight()
+```
 
 ## Title Showdown
 
@@ -218,7 +301,7 @@ by_word %>%
   ggplot(aes(x = fct_reorder(word, n), y = n)) +
   geom_bar(stat = 'identity') +
   coord_flip() + 
-  labs(title = 'Top Words Used in Kung-Fu Titles') +
+  labs(title = 'Top Words Used in Kung Fu Titles') +
   theme_fivethirtyeight()
 ggsave("imgs/top_words_in_titles.png",  width = 8, height = 6)
 ```
@@ -308,7 +391,7 @@ by_actor %>% filter(n > 20) %>%
 ggsave("imgs/actor_counts.png", width = 8, height = 6)
 ```
 
-Wow! [Ku Feng](https://en.wikipedia.org/wiki/Ku_Feng) apparently appeared in 82 Kung-Fu movies. That's a lot of Kung-Fu!
+Wow! [Ku Feng](https://en.wikipedia.org/wiki/Ku_Feng) apparently appeared in 82 Kung Fu movies. That's a lot of Kung Fu!
 
 His Wikipedia page isn't as impressed with this feat as I am, providing little information on this Martial Arts Maniac. Apparently his real name is Chan Sze-man, and his first film was in 1959, and apparently he is still acting. The [HKMDB](http://hkmdb.com/db/people/view.mhtml?id=3579&display_set=eng), or Hong Kong Movie Database, provides just a bit more info:
 
