@@ -425,6 +425,7 @@ function network() {
   * Updates nodes if a match is found.
   */
   chart.updateSearch = function (searchTerm) {
+    d3.event.preventDefault();
     var searchRegEx = new RegExp(searchTerm.toLowerCase());
     nodes.each(function (d) {
       var element = d3.select(this);
@@ -544,6 +545,16 @@ function network() {
           }
           return 0.00;
         });
+
+      edges.filter(function (l) {
+        if (l.source.id === d.id || l.target.id === d.id) {
+          return true;
+        } else if (stickyActor &&
+          (l.source.id === stickyActor.id || l.target.id === stickyActor.id)) {
+          return true;
+        }
+        return false;
+      }).raise();
       // higlight connected nodes
       nodes
         .style('fill', function (n) {
@@ -624,6 +635,14 @@ function network() {
         }
         return l.opactiy;
       });
+
+    edges.filter(function (l) {
+      if (stickyActor &&
+        (l.source.id === stickyActor.id || l.target.id === stickyActor.id)) {
+        return true;
+      }
+      return false;
+    }).raise();
 
     // reset nodes
     nodes
